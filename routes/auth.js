@@ -29,7 +29,7 @@ router.post("/register", async (req, res) => {
 
         res.send("Usuario registrado exitosamente.");
     } catch (err) {
-        console.error("Error al registrar usuario:", err.message);
+        console.error("Error al registrar usuario:", err);
         res.status(500).send("Error interno del servidor.");
     }
 });
@@ -51,13 +51,11 @@ router.post("/login", async (req, res) => {
 
         const user = result[0];
 
-        // Verificar la contraseña
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).send("Email o contraseña incorrectos.");
         }
 
-        // Crear un token JWT
         const token = jwt.sign({ id: user.id, nombre: user.nombre }, JWT_SECRET, { expiresIn: "1h" });
 
         res.json({ message: "Login exitoso.", token });
@@ -67,7 +65,6 @@ router.post("/login", async (req, res) => {
     }
 });
 
-// Middleware para proteger rutas
 function verificarToken(req, res, next) {
     const token = req.headers["authorization"];
     if (!token) return res.status(401).send("Acceso denegado.");
@@ -79,7 +76,6 @@ function verificarToken(req, res, next) {
     });
 }
 
-// Ruta protegida de ejemplo
 router.get("/perfil", verificarToken, (req, res) => {
     res.send(`Hola ${req.user.nombre}, este es tu perfil.`);
 });
