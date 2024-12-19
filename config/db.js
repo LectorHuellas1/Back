@@ -5,6 +5,8 @@ const db = mysql.createPool({
     user: "kirbynigg",         
     password: "123456ggg",  
     database: "lector",  
+    timezone: 'America/Bogota',
 });
 
 module.exports = db;
+

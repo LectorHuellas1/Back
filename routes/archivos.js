@@ -12,7 +12,8 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.post("/upload", upload.single("archivo"), (req, res) => {
+// Subir archivo
+router.post("/upload", upload.single("archivo"), async (req, res) => {
     const file = req.file;
 
     if (!file) {
@@ -20,40 +21,46 @@ router.post("/upload", upload.single("archivo"), (req, res) => {
     }
 
     const query = "INSERT INTO archivos (nombre, ruta) VALUES (?, ?)";
-    db.query(query, [file.originalname, file.path], (err) => {
-        if (err) {
-            console.error("Error al guardar en la base de datos:", err.message);
-            return res.status(500).send("Error interno del servidor.");
-        }
+
+    try {
+        await db.query(query, [file.originalname, file.path]); // Uso de await para Promises
         res.send("Archivo subido y guardado exitosamente.");
-    });
+    } catch (err) {
+        console.error("Error al guardar en la base de datos:", err.message);
+        res.status(500).send("Error interno del servidor.");
+    }
 });
 
-router.get("/archivos", (req, res) => {
+// Obtener lista de archivos
+router.get("/archivos", async (req, res) => {
     const query = "SELECT id, nombre, fecha FROM archivos ORDER BY fecha DESC";
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error("Error al obtener archivos:", err.message);
-            res.status(500).send("Error interno del servidor.");
-        } else {
-            res.json(results);
-        }
-    });
+
+    try {
+        const [results] = await db.query(query); // `results` contiene los datos
+        res.json(results);
+    } catch (err) {
+        console.error("Error al obtener archivos:", err.message);
+        res.status(500).send("Error interno del servidor.");
+    }
 });
 
-router.get("/archivo/:id", (req, res) => {
+// Obtener un archivo específico por ID
+router.get("/archivo/:id", async (req, res) => {
     const query = "SELECT ruta FROM archivos WHERE id = ?";
-    db.query(query, [req.params.id], (err, results) => {
-        if (err) {
-            console.error("Error al buscar archivo:", err.message);
-            res.status(500).send("Error interno del servidor.");
-        } else if (results.length === 0) {
+
+    try {
+        const [results] = await db.query(query, [req.params.id]);
+
+        if (results.length === 0) {
             res.status(404).send("Archivo no encontrado.");
         } else {
             const filePath = path.resolve(results[0].ruta);
             res.sendFile(filePath);
         }
-    });
+    } catch (err) {
+        console.error("Error al buscar archivo:", err.message);
+        res.status(500).send("Error interno del servidor.");
+    }
 });
 
 module.exports = router;
